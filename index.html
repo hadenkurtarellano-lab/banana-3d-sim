@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Saging Tuli Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; background: #ffffff; color: #000; font-family: 'Arial Black', sans-serif; overflow: hidden; text-align: center; }
+        #ui { position: absolute; bottom: 40px; width: 100%; z-index: 100; }
+        .btn { padding: 15px 35px; font-size: 20px; cursor: pointer; border-radius: 50px; background: #f1c40f; border: 2px solid #000; font-weight: bold; box-shadow: 0 6px #998106; margin: 10px; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px #998106; }
+        #status { font-size: 24px; margin-bottom: 10px; background: rgba(255,255,255,0.8); display: inline-block; padding: 5px 15px; border-radius: 10px; }
+        #instructions { position: absolute; top: 10px; width: 100%; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="instructions">Drag to rotate | Scroll to zoom</div>
+    
+    <div id="ui">
+        <div id="status">⏳ WAITING FOR GITHUB...</div><br>
+        <button class="btn" onclick="pukpok()">🔨 PUKPOK</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // 1. Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff); // WHITE BACKGROUND
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Controls (So you can find the banana if it's lost)
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // 3. Bright Lights
+        const light1 = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0xffffff, 2);
+        light2.position.set(10, 10, 10);
+        scene.add(light2);
+
+        // 4. Load Model
+        let banana;
+        const loader = new THREE.GLTFLoader();
+        
+        // Using a Proxy to bypass CORS block if GitHub is being difficult
+        const rawUrl = 'https://github.com/hadenkurtarellano-lab/banana-3d-sim/raw/refs/heads/main/leather-case-032602.glb';
+        
+        loader.load(rawUrl, (gltf) => {
+            banana = gltf.scene;
+            scene.add(banana);
+
+            // MASSIVE Scaling and Centering
+            banana.scale.set(1500, 1500, 1500); 
+            banana.position.set(0, 0, 0);
+
+            // Auto-focus camera on the object
+            const box = new THREE.Box3().setFromObject(banana);
+            const center = box.getCenter(new THREE.Vector3());
+            banana.position.sub(center); 
+
+            document.getElementById('status').innerText = "🍌 SAGING LOADED!";
+        }, 
+        (xhr) => {
+            let percent = Math.round((xhr.loaded / xhr.total) * 100);
+            document.getElementById('status').innerText = "LOADING: " + percent + "%";
+        },
+        (error) => {
+            console.error(error);
+            document.getElementById('status').innerText = "❌ ERROR: USE A LOCAL SERVER OR GITHUB PAGES";
+        });
+
+        camera.position.set(0, 20, 100);
+
+        // 5. Action
+        window.pukpok = () => {
+            if (banana) {
+                banana.position.y -= 5;
+                setTimeout(() => {
+                    banana.position.y += 5;
+                    document.getElementById('status').innerText = "✨ BINATA KA NA!";
+                    document.getElementById('status').style.color = "red";
+                }, 100);
+            }
+        };
+
+        // 6. Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            if (banana) banana.rotation.y += 0.005;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
